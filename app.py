@@ -8,32 +8,32 @@ ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif'}
 
 app = Flask(__name__)
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
+learner = load_learner('export.pkl')
 
 def allowed_file(filename):
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 
-@app.route('/')
-def hello_world():
-    return 'Hello, World!'
+@app.route('/ping')
+def ping():
+    return {'success': 'pong'}, 200
 
-@app.route('/bird', methods=['POST'])
+@app.route('/predict', methods=['POST'])
 def predict():
     if 'image' not in request.files:
-        return {'error': 'no image found.'}, 200
+        return {'error': 'no image found.'}, 400
 
     file = request.files['image'] 
     if file.filename == '':
-        return {'error': 'no image found.'}, 200
+        return {'error': 'no image found.'}, 400
 
     if file and allowed_file(file.filename): 
         filename = secure_filename(file.filename)
         filepath = os.path.join(app.config['UPLOAD_FOLDER'], filename)
         file.save(filepath)
-        learn_inf = load_learner('export.pkl')
-        prediction = learn_inf.predict(filepath)
+        prediction = learner.predict(filepath)
         return {'success': prediction[0]}, 200
 
-    return {'error': 'something went wrong.'}
+    return {'error': 'something went wrong.'}, 500
 
 if __name__ == '__main__':
     port = os.getenv('PORT',5000)
